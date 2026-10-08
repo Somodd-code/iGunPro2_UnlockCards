@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Locked Card Organizer</title>
+<style>
+:root{--bg:#f6f6f8;--fg:#1b1b22;--card:#fff;--mut:#6b6b78;--bd:#dcdce4;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121218;--fg:#ececf2;--card:#1d1d26;--mut:#9a9aaa;--bd:#32323f}}
+:root[data-theme="dark"]{--bg:#121218;--fg:#ececf2;--card:#1d1d26;--mut:#9a9aaa;--bd:#32323f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.4}
+main{max-width:960px;margin:0 auto;padding:20px 16px 48px}
+h1{margin:0 0 4px;font-size:1.6rem}
+p.sub{margin:0 0 16px;color:var(--mut)}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:16px}
+textarea{width:100%;height:80px;background:var(--bg);color:var(--fg);border:1px solid var(--bd);border-radius:8px;padding:8px;font-family:monospace;font-size:12px}
+button,input[type=search]{font:inherit;border-radius:8px;border:1px solid var(--bd);padding:8px 12px;background:var(--bg);color:var(--fg)}
+button{cursor:pointer;font-weight:600}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+input[type=search]{flex:1;min-width:160px}
+.stats{color:var(--mut);font-size:.9rem}
+section{margin-bottom:20px}
+h2{display:flex;align-items:center;gap:8px;font-size:1.15rem;margin:0 0 8px;padding-left:10px;border-left:6px solid var(--c)}
+h2 span{font-size:.8rem;color:var(--mut);font-weight:400}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+.c{background:var(--card);border:1px solid var(--bd);border-left:4px solid var(--c);border-radius:8px;padding:8px 10px}
+.c b{display:block;font-size:.95rem}
+.tag{display:inline-block;font-size:.7rem;font-weight:700;color:#fff;background:var(--c);border-radius:4px;padding:1px 6px;margin-bottom:3px}
+.c small{color:var(--mut)}
+.empty{color:var(--mut);font-style:italic;font-size:.9rem}
+</style></head><body><main>
+<h1>🔒 Locked Card Organizer</h1>
+<p class="sub">Shows only cards with <code>"locked": true</code>, grouped by rarity.</p>
+<div class="box">
+  <input type="file" id="f">
+  <div class="stats" style="margin-bottom:6px">Any file works (.json, .txt, or no extension).</div><textarea id="t" placeholder="…or paste your response JSON here"></textarea>
+  <div class="row"><button id="go">Load pasted JSON</button><input type="search" id="q" placeholder="Search cards or sets…"><span class="stats" id="st"></span></div>
+</div>
+<div id="out"></div>
+</main>
+<script>
+const SAMPLE=[{card:"Base2021_Tier2_SunAndMoon",count:1,locked:true},{card:"Base2022_Tier5_Korth_Sport",count:1,locked:true},{card:"GetSoaked_Rare_AA-12",locked:true,count:1,lockTime:1668603600000}];
+const ORDER=[["Award","#e0a800"],["Mythic","#e0245e"],["Legendary","#f08c00"],["Epic","#9b59d0"],["Rare","#2f80ed"],["Other / Tier-based","#8a8a99"]];
+let cards=SAMPLE;
+const GEMS=["amethyst","ruby","emerald","spessartine","sapphire","ametrine","aquamarine","diopside","diopaste","heliodor","labradorite","labrodite","morganite","onyx","opal","peridot","rubellite","tourmaline","tourlamine","white[_\\-\\s]?diamond"];
+const GEMRE=new RegExp("(^|[_\\-\\s])("+GEMS.join("|")+")($|[_\\-\\s])","i");
+function rarity(id){
+  const p=id.split("_"),r=(p[1]||"").toLowerCase();
+  if(GEMRE.test(id)&&!/sticker/i.test(id))return "Mythic";
+  if(r.startsWith("awards"))return "Award";
+  if(p[0]==="Mint"){if(r.includes("silver"))return "Epic";if(r.includes("gold"))return "Legendary";}
+  if(r.includes("mythic"))return "Mythic";
+  if(r.includes("legendary"))return "Legendary";
+  if(r.includes("epic"))return "Epic";
+  if(r.includes("rare"))return "Rare";
+  return "Other / Tier-based";
+}
+const COL={Mythic:"#e0245e",Legendary:"#f08c00",Epic:"#9b59d0",Rare:"#2f80ed",Uncommon:"#3aa655"};
+function sub(id){
+  const p=id.split("_"),r=(p[1]||"").toLowerCase();
+  if(p[0].startsWith("Base")&&r==="awards")return "Rare";
+  const x=r.replace("awards","");
+  if(new RegExp("^("+GEMS.join("|")+")$","i").test(x)||(p[2]&&r==="awards"&&GEMRE.test(p[2])))return "Mythic";
+  if(x.includes("gold"))return "Legendary";
+  if(x.includes("silver"))return "Epic";
+  return Object.keys(COL).find(k=>x.includes(k.toLowerCase()))||null;
+}
+function collect(x,a){
+  if(Array.isArray(x))x.forEach(v=>collect(v,a));
+  else if(x&&typeof x==="object"){
+    if(typeof x.card==="string")a.push(x);
+    else Object.values(x).forEach(v=>collect(v,a));
+  }
+  return a;
+}
+function load(txt){
+  try{
+    let j;try{j=JSON.parse(txt);}catch(_){const a=txt.indexOf("{"),b=txt.lastIndexOf("}");j=JSON.parse(txt.slice(a,b+1));}
+    cards=collect(j,[]);render();}
+  catch(e){document.getElementById("st").textContent="Couldn't read that JSON.";}
+}
+function pretty(id){
+  const p=id.split("_");
+  return {set:p[0],name:p.slice(2).join(" ").replace(/-/g,"-")||id};
+}
+function render(){
+  const q=document.getElementById("q").value.toLowerCase();
+  const locked=cards.filter(c=>c.locked===true&&c.card.toLowerCase().includes(q));
+  const g={};ORDER.forEach(o=>g[o[0]]=[]);
+  locked.forEach(c=>g[rarity(c.card)].push(c));
+  document.getElementById("st").textContent=locked.length+" locked of "+cards.length+" entries";
+  const out=document.getElementById("out");out.innerHTML="";
+  ORDER.forEach(([n,col])=>{
+    const RO=["Mythic","Legendary","Epic","Rare","Uncommon"];
+    const rk=c=>{const i=RO.indexOf(sub(c.card));return i<0?99:i;};
+    const list=g[n].sort((a,b)=>(n==="Award"?rk(a)-rk(b):0)||a.card.localeCompare(b.card));
+    const s=document.createElement("section");s.style.setProperty("--c",col);
+    s.innerHTML='<h2>'+n+' <span>'+list.length+'</span></h2>';
+    if(!list.length){s.innerHTML+='<div class="empty">None locked</div>';}
+    else{const d=document.createElement("div");d.className="grid";
+      list.forEach(c=>{const p=pretty(c.card),e=document.createElement("div");e.className="c";
+        const sr=n==="Award"?sub(c.card):null;
+        if(n==="Award")e.style.setProperty("--c",sr?COL[sr]:"#8a8a99");
+        e.innerHTML=(n==="Award"?'<span class="tag"></span>':"")+"<b></b><small></small>";
+        if(n==="Award")e.querySelector(".tag").textContent=sr?"Award "+sr:"Award";
+        e.querySelector("b").textContent=p.name;
+        e.querySelector("small").textContent=p.set+(c.count?" · x"+c.count:"");
+        d.appendChild(e);});
+      s.appendChild(d);}
+    out.appendChild(s);
+  });
+}
+document.getElementById("f").onchange=e=>{const r=new FileReader();r.onload=()=>load(r.result);r.readAsText(e.target.files[0]);};
+document.getElementById("go").onclick=()=>load(document.getElementById("t").value);
+document.getElementById("q").oninput=render;
+render();
+</script></body></html>
