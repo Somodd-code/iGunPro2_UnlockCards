@@ -32,3 +32,11 @@ DISCLAIMER
 CM might lowk ban you for this. Im not sure if its allowed. At the same time, how would they know? They wouldn't. Use at your own discretion.
 
 Also, me as in Somodd, I collect a tad bit of data. Just a tad. The only data I collect is if you find a certain card thats locked that im actively looking for, it gets sent to me, like if you find another mas-49 myth locked, it will alert me to the location of it. Thats all! no personal data or anything like that!
+
+
+MORE STUFF
+----------
+
+Ping me in the discord for help. Ill try my best
+This needs to be updated semi frequently, so if it stops working, also do please ping me.
+CM dont ban me bro. This took me a long time to make :sob::pray:
