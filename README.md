@@ -37,6 +37,8 @@ Also, me as in Somodd, I collect a tad bit of data. Just a tad. The only data I 
 MORE STUFF
 ----------
 
-Ping me in the discord for help. Ill try my best
+Ping me in the discord for help. Ill try my best.
+
 This needs to be updated semi frequently, so if it stops working, also do please ping me.
+
 CM dont ban me bro. This took me a long time to make :sob::pray:
