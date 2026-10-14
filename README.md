@@ -1,6 +1,14 @@
 CARD READER HELPER | SOMODD
 ===========================
 
+SETUP
+-----
+- look to your right on releases, download the zip.
+- download google play games developer emulator here: https://dl.google.com/tag/s/appguid=%7BC601E9A4-03B0-4188-843E-80058BF16EF9%7D&appname=GPG_Developer_Emulator_Stable&needsadmin=true&ap=prod/play/games/Install-GooglePlayGames-DeveloperEmulator-Stable.exe
+- setup and LOGIN to GPG emulator
+- run play.bat
+- follow instructions from there!
+
 EXISTING READER FEATURES
 ------------------------
 - Load JSON/text files or paste a response.
